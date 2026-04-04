@@ -1,0 +1,18 @@
+[
+  {
+    "username": "girder",
+    "password_hash": "9d51075e2790de71da81b2e7810e288d3ce7dcd1f377bcdd8fa24e104cc9b2d0",
+    "expiry_date": null,
+    "remark": "超级管理员",
+    "is_admin": true,
+    "created_at": "2026-04-04T17:58:05.447734"
+  },
+  {
+    "username": "guest",
+    "password_hash": "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
+    "expiry_date": null,
+    "remark": "访客用户",
+    "is_admin": false,
+    "created_at": "2026-04-04T17:58:05.447742"
+  }
+]

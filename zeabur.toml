@@ -1,0 +1,9 @@
+[service]
+name = "stock-analyzer"
+type = "python"
+
+[build]
+builder = "Nixpacks"
+
+[deploy]
+startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT"
