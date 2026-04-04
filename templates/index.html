@@ -303,6 +303,9 @@
             </div>
             <div class="user-actions">
                 {% if is_admin %}
+                <span style="color: white; font-size: 16px; font-weight: 600; margin-right: 10px;">
+                    👁️ 总访问量：{{ total_visits }}
+                </span>
                 <a href="/users" class="user-btn user-btn-admin">👥 用户管理</a>
                 {% endif %}
                 <a href="/logout" class="user-btn user-btn-logout">退出登录</a>

@@ -24,24 +24,47 @@ app.secret_key = 'stock-analyzer-secret-key-2024'
 
 USERS_FILE = 'users.json'
 MACHINES_FILE = 'machines.json'
+STATS_FILE = 'stats.json'
+
+def load_stats():
+    if os.path.exists(STATS_FILE):
+        with open(STATS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {'total_visits': 0}
+
+def save_stats(stats):
+    with open(STATS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(stats, f, ensure_ascii=False, indent=2)
+
+def increment_total_visits():
+    stats = load_stats()
+    stats['total_visits'] = stats.get('total_visits', 0) + 1
+    save_stats(stats)
+    return stats['total_visits']
 
 def init_users():
     if not os.path.exists(USERS_FILE):
         users = [
             {
                 'username': 'girder',
+                'password': '56707763',
                 'password_hash': hash_password('56707763'),
                 'expiry_date': None,
                 'remark': '超级管理员',
                 'is_admin': True,
+                'enabled': True,
+                'visit_count': 0,
                 'created_at': datetime.now().isoformat()
             },
             {
                 'username': 'guest',
+                'password': 'guest',
                 'password_hash': hash_password('guest'),
                 'expiry_date': None,
                 'remark': '访客用户',
                 'is_admin': False,
+                'enabled': True,
+                'visit_count': 0,
                 'created_at': datetime.now().isoformat()
             }
         ]
@@ -78,14 +101,16 @@ def register_machine(machine_id, username):
     machines = load_machines()
     if username not in machines:
         machines[username] = {}
-    expiry_date = (datetime.now() + timedelta(days=7)).isoformat()
-    machines[username][machine_id] = {
-        'expiry_date': expiry_date,
-        'registered_at': datetime.now().isoformat(),
-        'user_agent': request.headers.get('User-Agent', ''),
-        'ip': request.remote_addr or 'unknown'
-    }
-    save_machines(machines)
+    
+    if machine_id not in machines[username]:
+        expiry_date = (datetime.now() + timedelta(days=7)).isoformat()
+        machines[username][machine_id] = {
+            'expiry_date': expiry_date,
+            'registered_at': datetime.now().isoformat(),
+            'user_agent': request.headers.get('User-Agent', ''),
+            'ip': request.remote_addr or 'unknown'
+        }
+        save_machines(machines)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -101,6 +126,8 @@ def save_users(users):
         json.dump(users, f, ensure_ascii=False, indent=2)
 
 def is_user_valid(user):
+    if not user.get('enabled', True):
+        return False
     if user.get('is_admin'):
         return True
     if not user.get('expiry_date'):
@@ -108,7 +135,25 @@ def is_user_valid(user):
     expiry = datetime.fromisoformat(user['expiry_date'])
     return datetime.now() <= expiry
 
-matplotlib.rcParams["font.family"] = ["SimHei", "WenQuanYi Micro Hei", "Heiti TC"]
+def update_user_enabled_status(username):
+    users = load_users()
+    for user in users:
+        if user['username'] == username:
+            if not user.get('is_admin') and user.get('expiry_date'):
+                expiry = datetime.fromisoformat(user['expiry_date'])
+                if datetime.now() > expiry:
+                    user['enabled'] = False
+            break
+    save_users(users)
+
+def increment_user_visit_count(username):
+    users = load_users()
+    for user in users:
+        if user['username'] == username:
+            user['visit_count'] = user.get('visit_count', 0) + 1
+            break
+    save_users(users)
+
 matplotlib.rcParams['font.size'] = 12
 matplotlib.rcParams['axes.titlesize'] = 14
 matplotlib.rcParams['axes.labelsize'] = 12
@@ -467,51 +512,51 @@ class StockAnalyzer:
         try:
             fig, ((ax1, ax1_vp), (ax2, ax2_empty)) = plt.subplots(2, 2, figsize=(16, 12), dpi=100, gridspec_kw={'height_ratios': [2, 1], 'width_ratios': [3, 1]})
             
-            ax1.plot(df['date'], df['close'], label='收盘价', color='black', linewidth=1, alpha=0.8)
+            ax1.plot(df['date'], df['close'], label='Close Price', color='black', linewidth=1, alpha=0.8)
             
-            ax1.scatter(df.loc[peaks.index, 'date'], peaks, color='red', s=30, label='局部高点', alpha=0.6)
-            ax1.scatter(df.loc[troughs.index, 'date'], troughs, color='blue', s=30, label='局部低点', alpha=0.6)
+            ax1.scatter(df.loc[peaks.index, 'date'], peaks, color='red', s=30, label='Local Highs', alpha=0.6)
+            ax1.scatter(df.loc[troughs.index, 'date'], troughs, color='blue', s=30, label='Local Lows', alpha=0.6)
             
             colors = plt.cm.Set3(np.linspace(0, 1, len(centers)))
             for i, c in enumerate(centers):
                 linestyle = '--' if c == main_support or c == main_resistance else ':'
                 linewidth = 2 if c == main_support or c == main_resistance else 1
                 ax1.axhline(y=c, color=colors[i], linestyle=linestyle, linewidth=linewidth, alpha=0.7,
-                           label=f'层级 {i+1}: {c:.2f}')
+                           label=f'Level {i+1}: {c:.2f}')
             
             if main_support:
                 ax1.axhline(y=main_support, color='green', linestyle='-', linewidth=2.5, alpha=0.9,
-                           label=f'主要支撑 {main_support:.2f}')
+                           label=f'Main Support {main_support:.2f}')
             if main_resistance:
                 ax1.axhline(y=main_resistance, color='orange', linestyle='-', linewidth=2.5, alpha=0.9,
-                           label=f'主要压力 {main_resistance:.2f}')
+                           label=f'Main Resistance {main_resistance:.2f}')
             
             ax1.axhline(y=current_price, color='red', linestyle='-', linewidth=2, alpha=0.9,
-                       label=f'当前价 {current_price:.2f}')
+                       label=f'Current Price {current_price:.2f}')
             
             if vp_data:
-                ax1.axhline(y=vp_data['poc_price'], color='red', linestyle='-', linewidth=3, alpha=0.8, label=f'POC核心位 {vp_data["poc_price"]:.2f}')
-                ax1.axhline(y=vp_data['va_low'], color='forestgreen', linestyle='-.', linewidth=2, alpha=0.7, label=f'VA下沿 {vp_data["va_low"]:.2f}')
-                ax1.axhline(y=vp_data['va_high'], color='forestgreen', linestyle='-.', linewidth=2, alpha=0.7, label=f'VA上沿 {vp_data["va_high"]:.2f}')
-                ax1.fill_between(df['date'], vp_data['va_low'], vp_data['va_high'], color='green', alpha=0.1, label='价值区域VA')
+                ax1.axhline(y=vp_data['poc_price'], color='red', linestyle='-', linewidth=3, alpha=0.8, label=f'POC {vp_data["poc_price"]:.2f}')
+                ax1.axhline(y=vp_data['va_low'], color='forestgreen', linestyle='-.', linewidth=2, alpha=0.7, label=f'VA Low {vp_data["va_low"]:.2f}')
+                ax1.axhline(y=vp_data['va_high'], color='forestgreen', linestyle='-.', linewidth=2, alpha=0.7, label=f'VA High {vp_data["va_high"]:.2f}')
+                ax1.fill_between(df['date'], vp_data['va_low'], vp_data['va_high'], color='green', alpha=0.1, label='Value Area')
                 
                 ax1_vp.barh(vp_data['price_centers'], vp_data['vol_profile'], color='deepskyblue', alpha=0.7, height=(vp_data['price_centers'][1]-vp_data['price_centers'][0])*0.8)
                 ax1_vp.axhline(y=vp_data['poc_price'], color='red', linestyle='-', linewidth=2, alpha=0.8)
-                ax1_vp.set_title('成交量剖面', fontsize=12)
-                ax1_vp.set_xlabel('成交量')
+                ax1_vp.set_title('Volume Profile', fontsize=12)
+                ax1_vp.set_xlabel('Volume')
                 ax1_vp.grid(alpha=0.2)
             
-            ax1.set_title(f"{stock_code} - 支撑位/压力位分析 (K={best_k})【含成交量剖面】", fontsize=14, fontweight='bold')
-            ax1.set_ylabel("价格 (元)")
+            ax1.set_title(f"{stock_code} - Support/Resistance Analysis (K={best_k})", fontsize=14, fontweight='bold')
+            ax1.set_ylabel("Price (Yuan)")
             ax1.legend(loc='upper left', fontsize=8)
             ax1.grid(alpha=0.3)
             
             if indicators is not None and 'rsi' in indicators:
                 ax2.plot(df['date'], indicators['rsi'], label='RSI', color='purple', linewidth=1)
-                ax2.axhline(y=70, color='red', linestyle='--', alpha=0.7, label='超买线')
-                ax2.axhline(y=30, color='green', linestyle='--', alpha=0.7, label='超卖线')
+                ax2.axhline(y=70, color='red', linestyle='--', alpha=0.7, label='Overbought')
+                ax2.axhline(y=30, color='green', linestyle='--', alpha=0.7, label='Oversold')
                 ax2.set_ylabel("RSI")
-                ax2.set_xlabel("交易日期")
+                ax2.set_xlabel("Date")
                 ax2.legend(loc='upper left', fontsize=10)
                 ax2.grid(alpha=0.3)
                 ax2.set_ylim(0, 100)
@@ -554,7 +599,10 @@ def index():
             expiry_date = datetime.fromisoformat(machines[session['username']][machine_id]['expiry_date'])
             expiry_info = expiry_date.strftime('%Y年%m月%d日 %H:%M:%S')
     
-    return render_template('index.html', is_admin=current_user.get('is_admin', False), expiry_info=expiry_info)
+    stats = load_stats()
+    total_visits = stats.get('total_visits', 0)
+    
+    return render_template('index.html', is_admin=current_user.get('is_admin', False), expiry_info=expiry_info, total_visits=total_visits)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -564,8 +612,15 @@ def login():
         users = load_users()
         user = next((u for u in users if u['username'] == username), None)
         
+        if user:
+            update_user_enabled_status(username)
+            users = load_users()
+            user = next((u for u in users if u['username'] == username), None)
+        
         if user and user['password_hash'] == hash_password(password) and is_user_valid(user):
             session['username'] = username
+            increment_total_visits()
+            increment_user_visit_count(username)
             
             if not user.get('is_admin'):
                 machine_id = get_machine_id()
@@ -592,7 +647,7 @@ def users_page():
         return redirect(url_for('index'))
     return render_template('users.html', users=users)
 
-@app.route('/api/users', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/users', methods=['GET', 'POST', 'DELETE', 'PUT'])
 def api_users():
     if 'username' not in session:
         return jsonify({'error': '未登录'}), 401
@@ -602,6 +657,12 @@ def api_users():
         return jsonify({'error': '无权限'}), 403
     
     if request.method == 'GET':
+        for user in users:
+            if not user.get('is_admin') and user.get('expiry_date'):
+                expiry = datetime.fromisoformat(user['expiry_date'])
+                if datetime.now() > expiry:
+                    user['enabled'] = False
+        save_users(users)
         return jsonify(users)
     
     if request.method == 'POST':
@@ -616,10 +677,13 @@ def api_users():
         
         new_user = {
             'username': username,
+            'password': password,
             'password_hash': hash_password(password),
             'expiry_date': expiry_date if expiry_date else None,
             'remark': remark,
             'is_admin': False,
+            'enabled': True,
+            'visit_count': 0,
             'created_at': datetime.now().isoformat()
         }
         users.append(new_user)
@@ -632,6 +696,17 @@ def api_users():
         if username == 'girder':
             return jsonify({'error': '不能删除超级管理员'}), 400
         users = [u for u in users if u['username'] != username]
+        save_users(users)
+        return jsonify({'success': True})
+    
+    if request.method == 'PUT':
+        data = request.json
+        username = data.get('username')
+        enabled = data.get('enabled')
+        for user in users:
+            if user['username'] == username:
+                user['enabled'] = enabled
+                break
         save_users(users)
         return jsonify({'success': True})
 

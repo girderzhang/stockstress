@@ -66,6 +66,23 @@
         .btn-danger:hover {
             background: #c82333;
         }
+        .btn-toggle {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-toggle-active {
+            background: #28a745;
+            color: white;
+            border: none;
+        }
+        .btn-toggle-inactive {
+            background: #dc3545;
+            color: white;
+            border: none;
+        }
         .card {
             background: white;
             border-radius: 15px;
@@ -199,9 +216,11 @@
                 <thead>
                     <tr>
                         <th>用户名</th>
+                        <th>密码</th>
                         <th>角色</th>
                         <th>有效期</th>
                         <th>状态</th>
+                        <th>访问次数</th>
                         <th>备注</th>
                         <th>创建时间</th>
                         <th>操作</th>
@@ -221,8 +240,9 @@
                     const tbody = document.getElementById('userTableBody');
                     tbody.innerHTML = users.map(user => {
                         const isExpired = !user.is_admin && user.expiry_date && new Date(user.expiry_date) < new Date();
-                        const statusClass = isExpired ? 'badge-expired' : 'badge-active';
-                        const statusText = isExpired ? '已过期' : '有效';
+                        const isEnabled = user.enabled !== false;
+                        const finalEnabled = isEnabled && !isExpired;
+                        
                         const roleClass = user.is_admin ? 'badge-admin' : 'badge-user';
                         const roleText = user.is_admin ? '管理员' : '普通用户';
                         
@@ -231,17 +251,25 @@
                             expiryText = new Date(user.expiry_date).toLocaleDateString('zh-CN');
                         }
                         
+                        let toggleBtn = '';
                         let deleteBtn = '';
                         if (!user.is_admin) {
-                            deleteBtn = `<button class="btn btn-danger" onclick="deleteUser('${user.username}')">删除</button>`;
+                            const toggleText = finalEnabled ? '正常' : '禁用';
+                            const toggleClass = finalEnabled ? 'btn-toggle-active' : 'btn-toggle-inactive';
+                            toggleBtn = `<button class="btn-toggle ${toggleClass}" onclick="toggleUser('${user.username}', ${!finalEnabled})">${toggleText}</button>`;
+                            deleteBtn = `<button class="btn btn-danger" style="margin-left:8px;" onclick="deleteUser('${user.username}')">删除</button>`;
                         }
+                        
+                        const visitCount = user.visit_count || 0;
                         
                         return `
                             <tr>
                                 <td>${user.username}</td>
+                                <td>${user.password || '-'}</td>
                                 <td><span class="badge ${roleClass}">${roleText}</span></td>
                                 <td>${expiryText}</td>
-                                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                                <td>${toggleBtn || '<span class="badge badge-active">正常</span>'}</td>
+                                <td>${visitCount}</td>
                                 <td>${user.remark || '-'}</td>
                                 <td>${new Date(user.created_at).toLocaleString('zh-CN')}</td>
                                 <td>${deleteBtn}</td>
@@ -295,6 +323,28 @@
                 showMessage('添加失败: ' + err.message, true);
             });
         });
+        
+        function toggleUser(username, enabled) {
+            fetch('/api/users', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, enabled })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage(data.error, true);
+                } else {
+                    showMessage('状态更新成功！');
+                    loadUsers();
+                }
+            })
+            .catch(err => {
+                showMessage('更新失败: ' + err.message, true);
+            });
+        }
         
         function deleteUser(username) {
             if (!confirm('确定要删除用户 "' + username + '" 吗？')) {
