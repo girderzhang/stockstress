@@ -616,10 +616,6 @@ def index():
     
     expiry_info = None
     if not current_user.get('is_admin'):
-        machine_id = get_machine_id()
-        if not is_machine_valid(machine_id, session['username']):
-            session.pop('username', None)
-            return redirect(url_for('login'))
         # 显示用户自己的有效期，而不是机器码的
         if current_user.get('expiry_date'):
             expiry_date = datetime.fromisoformat(current_user['expiry_date'])
@@ -649,11 +645,6 @@ def login():
             session['username'] = username
             increment_total_visits()
             increment_user_visit_count(username)
-            
-            if not user.get('is_admin'):
-                machine_id = get_machine_id()
-                if not is_machine_valid(machine_id, username):
-                    register_machine(machine_id, username)
             
             return redirect(url_for('index'))
         
@@ -828,11 +819,6 @@ def api_analyze():
     current_user = next((u for u in users if u['username'] == session['username']), None)
     if not current_user or not is_user_valid(current_user):
         return jsonify({'error': '账号已过期'}), 403
-    
-    if not current_user.get('is_admin'):
-        machine_id = get_machine_id()
-        if not is_machine_valid(machine_id, session['username']):
-            return jsonify({'error': '机器码已过期，请重新登录'}), 403
     
     data = request.json
     stock_code = data.get('stock_code', '600036')
