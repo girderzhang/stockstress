@@ -1,0 +1,531 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>股票支撑位与压力位分析工具 - 使用说明</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            line-height: 1.8;
+            margin: 40px auto;
+            max-width: 900px;
+            color: #333;
+            background: #f5f5f5;
+            padding: 40px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #764ba2;
+            border-bottom: 2px solid #764ba2;
+            padding-bottom: 8px;
+            margin-top: 35px;
+        }
+        h3 {
+            color: #667eea;
+            margin-top: 25px;
+        }
+        h4 {
+            color: #555;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        @media print {
+            .print-btn {
+                display: none;
+            }
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">🖨️ 打印 / 保存为PDF</button>
+    <div class="container">
+        <h1>股票支撑位与压力位分析工具 - 使用说明</h1>
+<h2>目录</h2>
+<ol>
+<li><a href="#1-登录与账号管理">登录与账号管理</a></li>
+<li><a href="#2-主界面介绍">主界面介绍</a></li>
+<li><a href="#3-参数说明">参数说明</a></li>
+<li><a href="#4-技术指标解读">技术指标解读</a></li>
+<li><a href="#5-图表分析">图表分析</a></li>
+<li><a href="#6-常见问题">常见问题</a></li>
+</ol>
+<hr />
+<h2>1. 登录与账号管理</h2>
+<h3>1.1 登录</h3>
+<ul>
+<li>访问应用地址后，会跳转到登录页面</li>
+<li>输入用户名和密码，点击"登录"按钮</li>
+<li>成功登录后进入主界面</li>
+</ul>
+<h3>1.2 账号类型</h3>
+<table>
+<thead>
+<tr>
+<th>账号类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>超级管理员</td>
+<td>可查看总访问量、管理用户、无机器码限制</td>
+</tr>
+<tr>
+<td>普通用户</td>
+<td>只能使用分析功能，有机器码7天有效期限制</td>
+</tr>
+</tbody>
+</table>
+<h3>1.3 用户管理（仅管理员）</h3>
+<ul>
+<li>点击主界面右上角的"👥 用户管理"进入</li>
+<li><strong>功能</strong>：</li>
+<li>新增用户：可设置用户名、密码、有效期（可选）、备注</li>
+<li>查看用户列表（包含密码、访问次数、状态）</li>
+<li>切换用户状态（正常/禁用）</li>
+<li>删除用户</li>
+</ul>
+<h4>新增用户说明</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>用户名</td>
+<td>✅</td>
+<td>至少3个字符，不能与现有用户重复</td>
+</tr>
+<tr>
+<td>密码</td>
+<td>✅</td>
+<td>至少8个字符</td>
+</tr>
+<tr>
+<td>有效期</td>
+<td>❌</td>
+<td>可选，不填则永久有效</td>
+</tr>
+<tr>
+<td>备注</td>
+<td>❌</td>
+<td>可选，用于记录用户信息</td>
+</tr>
+</tbody>
+</table>
+<h4>用户列表说明</h4>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>用户名</td>
+<td>用户登录账号</td>
+</tr>
+<tr>
+<td>密码</td>
+<td>明文显示（请妥善保管）</td>
+</tr>
+<tr>
+<td>角色</td>
+<td>管理员或普通用户</td>
+</tr>
+<tr>
+<td>有效期</td>
+<td>用户账号的有效期，永久或指定日期</td>
+</tr>
+<tr>
+<td>状态</td>
+<td>正常/禁用，可点击切换</td>
+</tr>
+<tr>
+<td>访问次数</td>
+<td>该用户的登录次数统计</td>
+</tr>
+<tr>
+<td>备注</td>
+<td>创建时填写的备注信息</td>
+</tr>
+<tr>
+<td>创建时间</td>
+<td>账号创建时间</td>
+</tr>
+<tr>
+<td>操作</td>
+<td>删除用户（仅普通用户可删除）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>2. 主界面介绍</h2>
+<h3>2.1 顶部栏</h3>
+<ul>
+<li><strong>左侧</strong>：</li>
+<li>欢迎信息：👋 欢迎，[用户名]</li>
+<li>到期时间：📅 到期时间：[日期]（仅普通用户显示，显示用户账号有效期）</li>
+<li><strong>右侧</strong>（仅管理员可见）：</li>
+<li>总访问量统计：👁️ 总访问量：[数字]</li>
+<li>用户管理按钮：👥 用户管理</li>
+<li>退出登录按钮：退出登录</li>
+</ul>
+<h3>2.2 参数输入区域</h3>
+<p>分为两个选项卡：
+- <strong>📊 分析结果</strong>：显示文字分析结果
+- <strong>📈 箱体图表</strong>：显示可视化图表</p>
+<hr />
+<h2>3. 参数说明</h2>
+<h3>3.1 基本参数</h3>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>默认值</th>
+<th>范围</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>股票代码</strong></td>
+<td>600036</td>
+<td>-</td>
+<td>6位数字（A股），例如：600036（招商银行）、000001（平安银行）、600519（贵州茅台）</td>
+</tr>
+<tr>
+<td><strong>复权方式</strong></td>
+<td>qfq</td>
+<td>qfq/hfq</td>
+<td>qfq=前复权，hfq=后复权</td>
+</tr>
+<tr>
+<td><strong>开始时间</strong></td>
+<td>一年前</td>
+<td>-</td>
+<td>数据开始日期，默认今日往前推365天</td>
+</tr>
+<tr>
+<td><strong>结束时间</strong></td>
+<td>今日</td>
+<td>-</td>
+<td>数据结束日期，默认为当日</td>
+</tr>
+</tbody>
+</table>
+<h3>3.2 分析参数</h3>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>默认值</th>
+<th>范围</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>极值窗口</strong></td>
+<td>7</td>
+<td>3-20</td>
+<td>识别局部高点/低点的观察范围<br>数值越大，识别的极值点越少<br>推荐：短期3-5，中期7-10，长期12-20</td>
+</tr>
+<tr>
+<td><strong>最大聚类数</strong></td>
+<td>8</td>
+<td>3-15</td>
+<td>K-Means聚类的最大聚类数<br>数值越大，价格层级越细<br>推荐：波动小的股票5-8，波动大的股票10-15</td>
+</tr>
+<tr>
+<td><strong>阈值比例</strong></td>
+<td>5</td>
+<td>1-10</td>
+<td>支撑压力位的有效距离范围（%）<br>超出此范围的支撑压力位不显示</td>
+</tr>
+<tr>
+<td><strong>成交量分箱</strong></td>
+<td>25</td>
+<td>15-50</td>
+<td>成交量剖面的价格区间数量<br>数值越大，分辨率越高<br>推荐：数据少（&lt;100天）15-20，数据多（&gt;200天）30-50</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>4. 技术指标解读</h2>
+<h3>4.1 分析流程</h3>
+<ol>
+<li>输入股票代码和参数</li>
+<li>点击"开始分析"按钮</li>
+<li>等待几秒钟，系统自动获取数据并分析</li>
+<li>在"📊 分析结果"选项卡查看文字说明</li>
+<li>在"📈 箱体图表"选项卡查看可视化图表</li>
+</ol>
+<h3>4.2 分析结果 - 文字说明</h3>
+<h4>当前价格</h4>
+<ul>
+<li>显示股票最新收盘价</li>
+<li>单位：人民币（元）</li>
+</ul>
+<h4>主要支撑位</h4>
+<ul>
+<li><strong>价格</strong>：主要支撑位价格</li>
+<li><strong>置信度</strong>：0.0-1.0，数值越高越可靠</li>
+<li><strong>说明</strong>：价格下跌时可能反弹的位置，重要的买入参考点</li>
+</ul>
+<h4>主要压力位</h4>
+<ul>
+<li><strong>价格</strong>：主要压力位价格</li>
+<li><strong>置信度</strong>：0.0-1.0，数值越高越可靠</li>
+<li><strong>说明</strong>：价格上涨时可能回落的位置，重要的卖出参考点</li>
+</ul>
+<h4>成交量剖面 (Volume Profile)</h4>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>POC (Point of Control)</strong></td>
+<td>成交量最大的价格位，是最重要的支撑压力位<br>价格接近POC时往往会有较强的支撑或阻力</td>
+</tr>
+<tr>
+<td><strong>VA (Value Area)</strong></td>
+<td>成交量占70%的价格区间<br>VA Low=价值区域下限<br>VA High=价值区域上限<br>价格在VA内运行是正常的，突破VA可能预示趋势变化</td>
+</tr>
+</tbody>
+</table>
+<h4>次要支撑/压力位</h4>
+<ul>
+<li>除主要支撑压力位外的其他价格层级</li>
+<li>按价格从低到高排序</li>
+<li>可以作为辅助参考</li>
+</ul>
+<hr />
+<h2>5. 图表分析</h2>
+<p>点击"📈 箱体图表"选项卡，查看完整的可视化图表。</p>
+<h3>5.1 主图（上半部分）</h3>
+<h4>颜色说明</h4>
+<table>
+<thead>
+<tr>
+<th>颜色/样式</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🔴 红色圆点</td>
+<td>局部高点 (Local Highs)</td>
+</tr>
+<tr>
+<td>🔵 蓝色圆点</td>
+<td>局部低点 (Local Lows)</td>
+</tr>
+<tr>
+<td>🟢 绿色实线</td>
+<td>主要支撑位</td>
+</tr>
+<tr>
+<td>🟠 橙色实线</td>
+<td>主要压力位</td>
+</tr>
+<tr>
+<td>🔴 红色实线</td>
+<td>当前价格</td>
+</tr>
+<tr>
+<td>彩色虚线</td>
+<td>K-Means聚类价格层级</td>
+</tr>
+<tr>
+<td>🔴 粗红线</td>
+<td>POC (成交量控制点)</td>
+</tr>
+<tr>
+<td>🟢 绿色虚线</td>
+<td>VA (价值区域)</td>
+</tr>
+<tr>
+<td>浅绿色填充</td>
+<td>价值区域范围</td>
+</tr>
+</tbody>
+</table>
+<h4>左侧子图 - 成交量剖面</h4>
+<ul>
+<li>横向柱状图显示各价格区间的成交量</li>
+<li>柱子越长表示该价格区间成交越活跃</li>
+<li>POC位置用红色线标注</li>
+<li>VA范围用绿色虚线标注</li>
+</ul>
+<h3>5.2 副图（下半部分）</h3>
+<ul>
+<li><strong>RSI指标</strong>（相对强弱指标）</li>
+<li>范围：0-100</li>
+<li>
+<blockquote>
+<p>70：超买区域，可能回调</p>
+</blockquote>
+</li>
+<li>&lt;30：超卖区域，可能反弹</li>
+<li>70和30位置有虚线标注</li>
+</ul>
+<hr />
+<h2>6. 常见问题</h2>
+<h3>Q1: 如何选择合适的参数？</h3>
+<p><strong>A:</strong>
+- <strong>极值窗口</strong>：
+  - 短期交易：3-5
+  - 中期分析：7-10
+  - 长期趋势：12-20
+- <strong>最大聚类数</strong>：
+  - 波动小的股票：5-8
+  - 波动大的股票：10-15
+- <strong>成交量分箱</strong>：
+  - 数据少（&lt;100天）：15-20
+  - 数据多（&gt;200天）：30-50</p>
+<h3>Q2: 置信度是什么意思？</h3>
+<p><strong>A:</strong> 置信度结合了技术指标验证：
+- RSI超卖/超买 +0.2
+- 价格接近布林带上下轨 +0.3
+- 最高1.0，最低0.5</p>
+<h3>Q3: 机器码有效期到了怎么办？</h3>
+<p><strong>A:</strong>
+- 普通用户：联系管理员，管理员可以在用户管理中查看并重新启用账号
+- 或者更换设备/浏览器重新登录（会注册新的机器码）</p>
+<h3>Q4: 用户账号有效期到了怎么办？</h3>
+<p><strong>A:</strong>
+- 联系管理员，管理员可以在用户管理中：
+  1. 删除旧账号，重新创建新账号
+  2. 或者直接编辑用户的有效期（如需此功能请联系开发人员）</p>
+<h3>Q5: 如何设置自定义日期范围？</h3>
+<p><strong>A:</strong>
+- 点击"开始时间"和"结束时间"输入框
+- 选择你想要的日期范围
+- 默认是最近一年的数据</p>
+<h3>Q6: 图表显示乱码怎么办？</h3>
+<p><strong>A:</strong> 图表已全部使用英文，不会有乱码问题。</p>
+<h3>Q7: 为什么有些股票分析失败？</h3>
+<p><strong>A:</strong> 可能的原因：
+- 股票代码错误
+- 网络连接问题
+- 数据源暂时不可用
+- 该股票数据不足（建议选择至少有60天数据的股票）</p>
+<hr />
+<h2>附录：股票代码示例</h2>
+<table>
+<thead>
+<tr>
+<th>股票代码</th>
+<th>名称</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>600036</td>
+<td>招商银行</td>
+</tr>
+<tr>
+<td>000001</td>
+<td>平安银行</td>
+</tr>
+<tr>
+<td>600519</td>
+<td>贵州茅台</td>
+</tr>
+<tr>
+<td>601318</td>
+<td>中国平安</td>
+</tr>
+<tr>
+<td>000858</td>
+<td>五粮液</td>
+</tr>
+<tr>
+<td>600900</td>
+<td>长江电力</td>
+</tr>
+<tr>
+<td>601888</td>
+<td>中国中免</td>
+</tr>
+<tr>
+<td>002594</td>
+<td>比亚迪</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>技术支持</h2>
+<p>如有问题，请联系管理员。</p>
+    </div>
+</body>
+</html>

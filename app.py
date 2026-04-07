@@ -25,6 +25,32 @@ app.secret_key = 'stock-analyzer-secret-key-2024'
 USERS_FILE = 'users.json'
 MACHINES_FILE = 'machines.json'
 STATS_FILE = 'stats.json'
+VERIFICATION_CODES_FILE = 'verification_codes.json'
+
+# 邮件配置 - Mailtrap
+SMTP_SERVER = 'sandbox.smtp.mailtrap.io'
+SMTP_PORT = 2525
+SMTP_USER = 'f2af1bdf2bc9bd'
+SMTP_PASSWORD = '3e2e33fe20ffb5'
+
+def load_verification_codes():
+    if os.path.exists(VERIFICATION_CODES_FILE):
+        with open(VERIFICATION_CODES_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+def save_verification_codes(codes):
+    with open(VERIFICATION_CODES_FILE, 'w', encoding='utf-8') as f:
+        json.dump(codes, f, ensure_ascii=False, indent=2)
+
+def generate_verification_code():
+    import random
+    return ''.join([str(random.randint(0, 9)) for _ in range(6)])
+
+def send_verification_email(to_email, code):
+    # 测试模式：直接返回False，前端显示测试验证码
+    # 等部署成功后再配置真实邮件发送
+    return False
 
 def load_stats():
     if os.path.exists(STATS_FILE):
@@ -594,10 +620,12 @@ def index():
         if not is_machine_valid(machine_id, session['username']):
             session.pop('username', None)
             return redirect(url_for('login'))
-        machines = load_machines()
-        if session['username'] in machines and machine_id in machines[session['username']]:
-            expiry_date = datetime.fromisoformat(machines[session['username']][machine_id]['expiry_date'])
-            expiry_info = expiry_date.strftime('%Y年%m月%d日 %H:%M:%S')
+        # 显示用户自己的有效期，而不是机器码的
+        if current_user.get('expiry_date'):
+            expiry_date = datetime.fromisoformat(current_user['expiry_date'])
+            expiry_info = expiry_date.strftime('%Y年%m月%d日')
+        else:
+            expiry_info = '永久'
     
     stats = load_stats()
     total_visits = stats.get('total_visits', 0)
@@ -646,6 +674,88 @@ def users_page():
     if not current_user or not current_user.get('is_admin'):
         return redirect(url_for('index'))
     return render_template('users.html', users=users)
+
+@app.route('/api/send-code', methods=['POST'])
+def api_send_code():
+    data = request.json
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({'error': '请输入邮箱'}), 400
+    
+    code = generate_verification_code()
+    codes = load_verification_codes()
+    codes[email] = {
+        'code': code,
+        'expiry': (datetime.now() + timedelta(minutes=5)).isoformat()
+    }
+    save_verification_codes(codes)
+    
+    success = send_verification_email(email, code)
+    
+    if success:
+        return jsonify({'success': True, 'message': '验证码已发送'})
+    else:
+        return jsonify({'success': True, 'message': f'测试模式，验证码是: {code}'})
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    email = data.get('email')
+    code = data.get('code')
+    
+    if not all([username, password, email, code]):
+        return jsonify({'error': '请填写完整信息'}), 400
+    
+    if len(username) < 3:
+        return jsonify({'error': '用户名至少3位'}), 400
+    
+    if len(password) < 8:
+        return jsonify({'error': '密码至少8位'}), 400
+    
+    has_letter = any(c.isalpha() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    if not has_letter or not has_digit:
+        return jsonify({'error': '密码必须包含字母和数字'}), 400
+    
+    codes = load_verification_codes()
+    if email not in codes:
+        return jsonify({'error': '请先获取验证码'}), 400
+    
+    stored = codes[email]
+    if datetime.now() > datetime.fromisoformat(stored['expiry']):
+        return jsonify({'error': '验证码已过期'}), 400
+    
+    if stored['code'] != code:
+        return jsonify({'error': '验证码错误'}), 400
+    
+    users = load_users()
+    if any(u['username'] == username for u in users):
+        return jsonify({'error': '用户名已存在'}), 400
+    
+    expiry_date = (datetime.now() + timedelta(days=90)).isoformat()
+    
+    new_user = {
+        'username': username,
+        'password': password,
+        'password_hash': hash_password(password),
+        'expiry_date': expiry_date,
+        'email': email,
+        'remark': '自行注册用户',
+        'is_admin': False,
+        'enabled': True,
+        'visit_count': 0,
+        'created_at': datetime.now().isoformat()
+    }
+    users.append(new_user)
+    save_users(users)
+    
+    del codes[email]
+    save_verification_codes(codes)
+    
+    return jsonify({'success': True, 'message': '注册成功！有效期90天'})
 
 @app.route('/api/users', methods=['GET', 'POST', 'DELETE', 'PUT'])
 def api_users():
